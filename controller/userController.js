@@ -42,10 +42,9 @@ exports.logUser = async (req, res)=> {
         if (!isPasswordValid) {
             return res.status(400).json({ message: 'Неверный email или пароль' });
         }
-
         const token = jwt.sign({ id: user[0].id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        res.header('Authorization', `Bearer ${token}`);
-        res.json({ token });
+        res.cookie('token', token, { httpOnly: true, maxAge: 3600000 });
+        res.header("Authorization", `Bearer ${token}`).json(token);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
