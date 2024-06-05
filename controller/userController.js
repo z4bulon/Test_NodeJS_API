@@ -1,65 +1,16 @@
-const db = require('../db');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-
-const validateUser = (data) => {
-    const { name, email, password } = data;
-    if (!name || !email || !password) return 'Имя, Email и Пароль обязательны';
-    if (password.length < 6) return 'Пароль должен быть не менее 6 символов';
-    return null;
-};
-
-exports.regUser = async (req, res) => {
-    const { name, email, password } = req.body;
-
-    try{
-        const error = validateUser({ name, email, password });
-        if (error) return res.status(400).send(error);
-
-        const [existingUser] = await db.query('SELECT * FROM users WHERE email = ?' , [email]);
-        if (existingUser.length > 0) {
-            return res.status(400).json({ message: 'Email уже зарегестрирован, попробуйте войти через него' });
-        }
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const user = [ name, email, hashedPassword ];
-        await db.query('INSERT INTO users (name, email, password) VALUES (?,?,?)', user);
-        res.status(201).json({ message: 'Пользователь зарегестрирован' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-exports.logUser = async (req, res)=> {
-    const { email, password } = req.body;
-    try {
-        const [user] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
-        if (user.length === 0) {
-            return res.status(400).json({ message: 'Неверный email или пароль' });
-        }
-
-        const isPasswordValid = await bcrypt.compare(password, user[0].password);
-        if (!isPasswordValid) {
-            return res.status(400).json({ message: 'Неверный email или пароль' });
-        }
-        const token = jwt.sign({ id: user[0].id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        res.cookie('token', token, { httpOnly: true, maxAge: 3600000 });
-        res.header("Authorization", `Bearer ${token}`).json(token);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
+const { getConnection } = require('../db');
 
 exports.getUser = async (req, res) => {
     const { id } = req.params;
     try {
-        const [user] = await db.query('SELECT * FROM users WHERE id = ?', [id]);
+        const connection = await getConnection();
+        const [user] = await connection.execute('SELECT * FROM users WHERE id = ?', [id]);
         if (!user) {
             return res.status(404).json({ message: 'Пользователь не найден' });
         }
-        res.json({user});
+        res.json(user);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: 'Внутренняя ошибка сервера' });
     }
 };
 
@@ -69,7 +20,8 @@ exports.editUser =  async (req, res) => {
     const photo = req.file ? req.file.filename : null;
 
     try {
-        const [user] = await db.query('SELECT * FROM users WHERE id = ?', [id]);
+        const connection = await getConnection();
+        const [user] = await connection.execute('SELECT * FROM users WHERE id = ?', [id]);
         if (user.length === 0) {
             return res.status(404).json({ message: 'Пользователь не найден' });
         }
@@ -99,12 +51,12 @@ exports.editUser =  async (req, res) => {
 
         const sql = `UPDATE users SET ${updates.join(', ')} WHERE id = ?`;
 
-        await db.query(sql, values);
+        await await connection.execute(sql, values);
 
         res.json({ message: 'Пользователь успешно обновлен' });
 
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: 'Внутренняя ошибка сервера' });
     }
 };
 
@@ -114,8 +66,9 @@ exports.listUser = async (req, res) => {
     const offset = (page - 1) * limit;
 
     try {
-        const [users] = await db.query('SELECT * FROM users ORDER BY regdate DESC LIMIT ? OFFSET ?', [limit, offset]);
-        const [total] = await db.query('SELECT COUNT(*) as count FROM users');
+        const connection = await getConnection();
+        const [users] = await await connection.execute('SELECT * FROM users ORDER BY regdate DESC LIMIT ? OFFSET ?', [limit, offset]);
+        const [total] = await await connection.execute('SELECT COUNT(*) as count FROM users');
 
         res.json({
             total: total[0].count,
@@ -124,6 +77,6 @@ exports.listUser = async (req, res) => {
             users
         });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: 'Внутренняя ошибка сервера' });
     }
 };

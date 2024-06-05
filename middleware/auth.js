@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 module.exports = async (req, res, next) => {
     const token = req.cookies.token;
     if (!token) {
-        return res.status(403).json({ message: 'Нужна авторизация' });
+        return res.status(402).json({ message: 'Нужна авторизация' });
     }
 
     try {

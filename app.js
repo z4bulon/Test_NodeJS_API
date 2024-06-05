@@ -1,7 +1,8 @@
 const express = require("express");
 const bodyParser = require('body-parser');
 const path = require('path');
-const cookieParser = require('cookie-parser')
+const cookieParser = require('cookie-parser');
+const { initializeDatabase } = require('./db');
 require('dotenv').config()
 const userRouter = require('./routes/userRouter');
 
@@ -17,7 +18,9 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use('/user', userRouter);
 
-const PORT = process.env.PORT || 3000;
+initializeDatabase();
+
+const PORT = process.env.PORT;
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
