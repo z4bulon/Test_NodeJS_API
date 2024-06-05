@@ -51,7 +51,7 @@ exports.editUser =  async (req, res) => {
 
         const sql = `UPDATE users SET ${updates.join(', ')} WHERE id = ?`;
 
-        await await connection.execute(sql, values);
+        await connection.execute(sql, values);
 
         res.json({ message: 'Пользователь успешно обновлен' });
 
@@ -67,8 +67,8 @@ exports.listUser = async (req, res) => {
 
     try {
         const connection = await getConnection();
-        const [users] = await await connection.execute('SELECT * FROM users ORDER BY regdate DESC LIMIT ? OFFSET ?', [limit, offset]);
-        const [total] = await await connection.execute('SELECT COUNT(*) as count FROM users');
+        const [users] = await connection.execute('SELECT * FROM users ORDER BY regdate DESC LIMIT ? OFFSET ?', [limit, offset]);
+        const [total] = await connection.execute('SELECT COUNT(*) as count FROM users');
 
         res.json({
             total: total[0].count,

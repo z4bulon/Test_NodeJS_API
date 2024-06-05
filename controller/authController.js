@@ -2,10 +2,13 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { getConnection } = require('../db');
 
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const validateUser = (data) => {
     const { name, email, password } = data;
     if (!name || !email || !password) return 'Имя, Email и Пароль обязательны';
     if (password.length < 6) return 'Пароль должен быть не менее 6 символов';
+    if (!emailRegex.test(email)) return 'Неправильный формат почты';
     return null;
 };
 
