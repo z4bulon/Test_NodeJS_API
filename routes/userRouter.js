@@ -1,5 +1,4 @@
 const express = require("express");
-const path = require('path');
 const userController = require("../controller/userController.js");
 const auth = require('../middleware/auth');
 const upload = require('../middleware/upload');
