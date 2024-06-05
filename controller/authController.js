@@ -4,6 +4,8 @@ const { getConnection } = require('../db');
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+//В идеале использовать библиотеки для валидации, например express-validator
+
 const validateUser = (data) => {
     const { name, email, password } = data;
     if (!name || !email || !password) return 'Имя, Email и Пароль обязательны';

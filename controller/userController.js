@@ -2,20 +2,34 @@ const { getConnection } = require('../db');
 
 exports.getUser = async (req, res) => {
     const { id } = req.params;
+
+    if (!/^\d+$/.test(id)) {
+        return res.status(400).json({ message: 'Некорректный формат ID пользователя' });
+    }
+
     try {
         const connection = await getConnection();
-        const [user] = await connection.execute('SELECT * FROM users WHERE id = ?', [id]);
-        if (!user) {
+        const [user] = await connection.execute('SELECT id, name, surname, email, gender, photo, regdate FROM users WHERE id = ?', [id]);
+        if (!user[0]) {
             return res.status(404).json({ message: 'Пользователь не найден' });
         }
-        res.json(user);
+        res.json(user[0]);
     } catch (error) {
         res.status(500).json({ message: 'Внутренняя ошибка сервера' });
     }
 };
 
 exports.editUser =  async (req, res) => {
+    const userId = JSON.parse(req.user).id;
     const { id } = req.params;
+
+    if (!/^\d+$/.test(id)) {
+        return res.status(400).json({ message: 'Некорректный формат ID пользователя' });
+    }
+
+    if (userId !== parseInt(id))
+        return res.status(402).json({ message: 'Недостаточно полномочий' })
+
     const updatedFields= req.body;
     const photo = req.file ? req.file.filename : null;
 
@@ -64,18 +78,10 @@ exports.listUser = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = 10;
     const offset = (page - 1) * limit;
-
     try {
         const connection = await getConnection();
-        const [users] = await connection.execute('SELECT * FROM users ORDER BY regdate DESC LIMIT ? OFFSET ?', [limit, offset]);
-        const [total] = await connection.execute('SELECT COUNT(*) as count FROM users');
-
-        res.json({
-            total: total[0].count,
-            page: parseInt(page),
-            limit,
-            users
-        });
+        const [users] = await connection.execute('SELECT id, name, surname, email, gender, photo, regdate FROM users ORDER BY regdate DESC LIMIT ' + limit + ' OFFSET ' + offset);
+        res.json(users);
     } catch (error) {
         res.status(500).json({ message: 'Внутренняя ошибка сервера' });
     }

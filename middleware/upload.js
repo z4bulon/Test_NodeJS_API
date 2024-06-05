@@ -2,11 +2,13 @@ const multer = require('multer');
 const path = require('path');
 
 const fileFilter = (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png'];
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     if (allowedTypes.includes(file.mimetype)) {
         cb(null, true);
     } else {
-        cb(new Error('Недопустимый формат файла'), false);
+        const error = new Error('Недопустимый формат файла');
+        error.status = 400;
+        cb(error, false);
     }
 };
 
@@ -25,4 +27,12 @@ const upload = multer({
     limits: { fileSize: 10 * 1024 * 1024 }
 });
 
-module.exports = upload;
+const handleMulterErrors = (err, req, res) => {
+    if (err instanceof multer.MulterError) {
+        res.status(400).json({ message: err.message });
+    } else {
+        res.status(err.status || 500).json({ message: err.message });
+    }
+};
+
+module.exports = {upload, handleMulterErrors};
